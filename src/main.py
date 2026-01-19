@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Plovdiv School News Bot
-Scrapes dz-priem.plovdiv.bg for news and notifies via Viber.
+Бот за новини от детски градини в Пловдив
+Следи dz-priem.plovdiv.bg за новини и уведомява чрез Viber.
 """
 
 import hashlib
@@ -17,7 +17,7 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
-# Configure logging
+# Конфигурация на логовете
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -27,9 +27,9 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Configuration from environment
+# Конфигурация от environment променливи
 VIBER_BOT_TOKEN = os.getenv('VIBER_BOT_TOKEN')
-VIBER_CHAT_ID = os.getenv('VIBER_CHAT_ID')  # Group chat ID or user ID
+VIBER_CHAT_ID = os.getenv('VIBER_CHAT_ID')  # ID на групов чат или потребител
 NEWS_URL = os.getenv('NEWS_URL', 'https://dz-priem.plovdiv.bg/news')
 STATE_FILE = os.getenv('STATE_FILE', '/data/seen_articles.json')
 DRY_RUN = os.getenv('DRY_RUN', 'false').lower() == 'true'
@@ -37,7 +37,7 @@ DRY_RUN = os.getenv('DRY_RUN', 'false').lower() == 'true'
 
 @dataclass
 class Article:
-    """Represents a news article."""
+    """Представя новинарска статия."""
     url: str
     title: str
     date: Optional[str] = None
@@ -45,12 +45,12 @@ class Article:
     
     @property
     def id(self) -> str:
-        """Generate unique ID from URL hash."""
+        """Генерира уникален ID от хеш на URL."""
         return hashlib.sha256(self.url.encode()).hexdigest()[:16]
 
 
 class StateManager:
-    """Manages persistent state of seen articles."""
+    """Управлява състоянието на видените статии."""
     
     def __init__(self, state_file: str):
         self.state_file = Path(state_file)
@@ -59,41 +59,41 @@ class StateManager:
         self._load()
     
     def _load(self) -> None:
-        """Load state from file."""
+        """Зарежда състоянието от файл."""
         if self.state_file.exists():
             try:
                 with open(self.state_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
                     self._seen = set(data.get('seen_ids', []))
-                    logger.info(f"Loaded {len(self._seen)} seen article IDs")
+                    logger.info(f"Заредени {len(self._seen)} видени статии")
             except (json.JSONDecodeError, IOError) as e:
-                logger.warning(f"Failed to load state: {e}")
+                logger.warning(f"Грешка при зареждане на състоянието: {e}")
                 self._seen = set()
     
     def _save(self) -> None:
-        """Save state to file."""
+        """Записва състоянието във файл."""
         try:
             with open(self.state_file, 'w', encoding='utf-8') as f:
                 json.dump({'seen_ids': list(self._seen), 'updated_at': datetime.now(timezone.utc).isoformat()}, f, indent=2)
         except IOError as e:
-            logger.error(f"Failed to save state: {e}")
+            logger.error(f"Грешка при запис на състоянието: {e}")
     
     def is_seen(self, article: Article) -> bool:
-        """Check if article was already seen."""
+        """Проверява дали статията вече е видяна."""
         return article.id in self._seen
     
     def mark_seen(self, article: Article) -> None:
-        """Mark article as seen and persist."""
+        """Маркира статия като видяна и записва."""
         self._seen.add(article.id)
         self._save()
     
     def get_seen_count(self) -> int:
-        """Return count of seen articles."""
+        """Връща броя видени статии."""
         return len(self._seen)
 
 
 class NewsScraper:
-    """Scrapes news from the municipality website."""
+    """Извлича новини от сайта на общината."""
     
     HEADERS = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -107,26 +107,26 @@ class NewsScraper:
         self.session.headers.update(self.HEADERS)
     
     def fetch_articles(self) -> list[Article]:
-        """Fetch and parse news articles from the website."""
-        logger.info(f"Fetching news from {self.base_url}")
+        """Извлича и парсва новини от сайта."""
+        logger.info(f"Извличане на новини от {self.base_url}")
         
         try:
             response = self.session.get(self.base_url, timeout=30)
             response.raise_for_status()
             response.encoding = 'utf-8'
         except Exception as e:
-            logger.error(f"Failed to fetch news page: {e}")
+            logger.error(f"Грешка при извличане на страницата: {e}")
             return []
         
         return self._parse_articles(response.text)
     
     def _parse_articles(self, html: str) -> list[Article]:
-        """Parse articles from HTML content."""
+        """Парсва статии от HTML съдържание."""
         soup = BeautifulSoup(html, 'html.parser')
         articles = []
         
-        # Try multiple common selectors for news listings
-        # The actual selectors will need adjustment based on the real site structure
+        # Опитваме различни селектори за списъци с новини
+        # Селекторите може да се наложи да бъдат коригирани според структурата на сайта
         selectors = [
             'article',
             '.news-item',
@@ -144,12 +144,12 @@ class NewsScraper:
         for selector in selectors:
             items = soup.select(selector)
             if items:
-                logger.debug(f"Found {len(items)} items with selector: {selector}")
+                logger.debug(f"Намерени {len(items)} елемента със селектор: {selector}")
                 break
         
         if not items:
-            # Fallback: find all links that look like news articles
-            logger.warning("No items found with standard selectors, trying link extraction")
+            # Резервен вариант: търсим всички линкове, които изглеждат като новини
+            logger.warning("Не са намерени елементи със стандартни селектори, опитваме извличане на линкове")
             items = soup.find_all('a', href=True)
             items = [a for a in items if self._looks_like_news_link(a)]
         
@@ -158,35 +158,35 @@ class NewsScraper:
             if article:
                 articles.append(article)
         
-        logger.info(f"Parsed {len(articles)} articles")
+        logger.info(f"Парснати {len(articles)} статии")
         return articles
     
     def _looks_like_news_link(self, tag) -> bool:
-        """Check if a link looks like a news article."""
+        """Проверява дали линк изглежда като новинарска статия."""
         href = tag.get('href', '')
         text = tag.get_text(strip=True)
         
-        # Filter out navigation, social links, etc.
+        # Филтриране на навигационни и социални линкове
         skip_patterns = ['facebook', 'twitter', 'instagram', 'linkedin', 'youtube', 
                         'login', 'register', 'mailto:', 'tel:', '#', 'javascript:']
         
         if any(p in href.lower() for p in skip_patterns):
             return False
         
-        # Must have some text content
+        # Трябва да има текстово съдържание
         if len(text) < 10:
             return False
             
-        # Should be a relative or same-domain link
+        # Трябва да е относителен линк или от същия домейн
         if href.startswith('http') and 'plovdiv.bg' not in href:
             return False
             
         return True
     
     def _extract_article(self, item) -> Optional[Article]:
-        """Extract article data from a parsed item."""
+        """Извлича данни за статия от парснат елемент."""
         try:
-            # Try to find the link
+            # Опитваме да намерим линка
             if item.name == 'a':
                 link = item
             else:
@@ -199,9 +199,8 @@ class NewsScraper:
             if not href or href == '#':
                 return None
             
-            # Normalize URL
+            # Нормализиране на URL
             if href.startswith('/'):
-                # Extract base domain from self.base_url
                 from urllib.parse import urljoin
                 url = urljoin(self.base_url, href)
             elif not href.startswith('http'):
@@ -209,7 +208,7 @@ class NewsScraper:
             else:
                 url = href
             
-            # Get title
+            # Вземане на заглавие
             title = link.get_text(strip=True)
             if not title:
                 title = link.get('title', '')
@@ -217,13 +216,13 @@ class NewsScraper:
             if not title or len(title) < 5:
                 return None
             
-            # Try to find date
+            # Опит за намиране на дата
             date = None
             date_elem = item.find(class_=lambda x: x and ('date' in x.lower() if isinstance(x, str) else any('date' in c.lower() for c in x)))
             if date_elem:
                 date = date_elem.get_text(strip=True)
             
-            # Try to find summary/excerpt
+            # Опит за намиране на резюме
             summary = None
             for class_hint in ['summary', 'excerpt', 'description', 'text', 'content']:
                 summary_elem = item.find(class_=lambda x: x and (class_hint in str(x).lower()))
@@ -234,12 +233,12 @@ class NewsScraper:
             return Article(url=url, title=title, date=date, summary=summary)
             
         except Exception as e:
-            logger.debug(f"Failed to extract article: {e}")
+            logger.debug(f"Грешка при извличане на статия: {e}")
             return None
 
 
 class ViberBot:
-    """Sends notifications via Viber Bot API."""
+    """Изпраща уведомления чрез Viber Bot API."""
     
     API_URL = 'https://chatapi.viber.com/pa/send_message'
     
@@ -249,12 +248,12 @@ class ViberBot:
         self.session = requests.Session()
     
     def send_article(self, article: Article) -> bool:
-        """Send a notification about a new article."""
+        """Изпраща уведомление за нова статия."""
         message = self._format_message(article)
         return self._send_message(message, article.url)
     
     def _format_message(self, article: Article) -> str:
-        """Format article as a notification message."""
+        """Форматира статия като съобщение за уведомление."""
         parts = [f"📰 *Ново съобщение*\n\n{article.title}"]
         
         if article.date:
@@ -266,7 +265,7 @@ class ViberBot:
         return ''.join(parts)
     
     def _send_message(self, text: str, url: Optional[str] = None) -> bool:
-        """Send a message via Viber API."""
+        """Изпраща съобщение чрез Viber API."""
         payload = {
             'receiver': self.chat_id,
             'type': 'url' if url else 'text',
@@ -292,20 +291,20 @@ class ViberBot:
             result = response.json()
             
             if result.get('status') == 0:
-                logger.info(f"Message sent successfully")
+                logger.info("Съобщението е изпратено успешно")
                 return True
             else:
-                logger.error(f"Viber API error: {result}")
+                logger.error(f"Viber API грешка: {result}")
                 return False
                 
         except requests.RequestException as e:
-            logger.error(f"Failed to send Viber message: {e}")
+            logger.error(f"Грешка при изпращане на Viber съобщение: {e}")
             return False
     
     def send_summary(self, new_count: int, total_count: int) -> bool:
-        """Send a summary notification."""
+        """Изпраща обобщено уведомление."""
         if new_count == 0:
-            logger.info("No new articles to report")
+            logger.info("Няма нови статии за докладване")
             return True
         
         message = f"✅ Проверих за новини от детските градини.\n\n" \
@@ -316,15 +315,15 @@ class ViberBot:
 
 
 def main():
-    """Main entry point."""
-    logger.info("Starting Plovdiv School News Bot")
+    """Главна входна точка."""
+    logger.info("Стартиране на бота за новини от детски градини в Пловдив")
     
-    # Validate configuration
+    # Валидиране на конфигурацията
     if not DRY_RUN and (not VIBER_BOT_TOKEN or not VIBER_CHAT_ID):
-        logger.error("VIBER_BOT_TOKEN and VIBER_CHAT_ID are required (unless DRY_RUN=true)")
+        logger.error("VIBER_BOT_TOKEN и VIBER_CHAT_ID са задължителни (освен ако DRY_RUN=true)")
         sys.exit(1)
     
-    # Initialize components
+    # Инициализация на компонентите
     state = StateManager(STATE_FILE)
     scraper = NewsScraper(NEWS_URL)
     
@@ -332,42 +331,42 @@ def main():
         bot = ViberBot(VIBER_BOT_TOKEN, VIBER_CHAT_ID)
     else:
         bot = None
-        logger.info("DRY_RUN mode - no messages will be sent")
+        logger.info("DRY_RUN режим - няма да се изпращат съобщения")
     
-    # Fetch and process articles
+    # Извличане и обработка на статии
     articles = scraper.fetch_articles()
     
     if not articles:
-        logger.warning("No articles found")
+        logger.warning("Не са намерени статии")
         return
     
     new_articles = []
     for article in articles:
         if not state.is_seen(article):
             new_articles.append(article)
-            logger.info(f"New article: {article.title[:60]}...")
+            logger.info(f"Нова статия: {article.title[:60]}...")
     
-    logger.info(f"Found {len(new_articles)} new articles out of {len(articles)} total")
+    logger.info(f"Намерени {len(new_articles)} нови статии от общо {len(articles)}")
     
-    # Send notifications for new articles
+    # Изпращане на уведомления за нови статии
     for article in new_articles:
         if bot:
             success = bot.send_article(article)
             if success:
                 state.mark_seen(article)
         else:
-            # Dry run - just mark as seen
-            logger.info(f"[DRY RUN] Would notify: {article.title}")
+            # Тестов режим - само маркираме като видяна
+            logger.info(f"[ТЕСТ] Би уведомил за: {article.title}")
             logger.info(f"  URL: {article.url}")
             if article.date:
-                logger.info(f"  Date: {article.date}")
+                logger.info(f"  Дата: {article.date}")
             state.mark_seen(article)
     
-    # Send summary
+    # Изпращане на обобщение
     if bot and new_articles:
         bot.send_summary(len(new_articles), state.get_seen_count())
     
-    logger.info("Completed successfully")
+    logger.info("Завършено успешно")
 
 
 if __name__ == '__main__':

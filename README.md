@@ -1,54 +1,54 @@
-# Plovdiv School News Bot 🏫
+# Бот за новини от детски градини в Пловдив 🏫
 
-A Viber bot that monitors the Plovdiv municipality website for kindergarten and school-related news, and notifies parents in a group chat.
+Viber бот, който следи сайта на община Пловдив за новини свързани с детски градини и ясли, и уведомява родителите в групов чат.
 
-## Features
+## Функции
 
-- Scrapes `dz-priem.plovdiv.bg/news` for new articles
-- Tracks seen articles to avoid duplicate notifications
-- Sends formatted messages via Viber Bot API
-- Designed to run once daily at 15:00 (configurable)
-- Docker-based for easy deployment on unRAID or any server
+- Следи `dz-priem.plovdiv.bg/news` за нови статии
+- Запомня вече видените статии, за да не изпраща дубликати
+- Изпраща форматирани съобщения чрез Viber Bot API
+- Проектиран да работи веднъж дневно в 15:00 (настройваемо)
+- Базиран на Docker за лесно разгръщане на unRAID или друг сървър
 
-## Quick Start
+## Бърз старт
 
-### 1. Create a Viber Bot
+### 1. Създаване на Viber бот
 
-1. Go to [Viber Admin Panel](https://partners.viber.com/)
-2. Create a new bot account
-3. Copy the authentication token
+1. Отидете на [Viber Admin Panel](https://partners.viber.com/)
+2. Създайте нов бот акаунт
+3. Копирайте токена за автентикация
 
-### 2. Get the Chat ID
+### 2. Получаване на Chat ID
 
-For **group chats**, the bot needs to be added to the group first. When someone sends a message while the bot is present, the group ID will appear in webhook events.
+За **групови чатове** ботът трябва първо да бъде добавен в групата. Когато някой изпрати съобщение докато ботът е в групата, ID-то на групата ще се появи в webhook събитията.
 
-For **1:1 messages**, use the Viber user ID of the recipient.
+За **лични съобщения** използвайте Viber user ID на получателя.
 
-### 3. Configure
+### 3. Конфигурация
 
 ```bash
 cp .env.example .env
-# Edit .env with your credentials
+# Редактирайте .env с вашите данни
 ```
 
-### 4. Run
+### 4. Стартиране
 
-**Test run (dry run, no messages sent):**
+**Тестово стартиране (без изпращане на съобщения):**
 ```bash
 docker compose run --rm -e DRY_RUN=true plovdiv-school-news-bot
 ```
 
-**Production run:**
+**Продукционно стартиране:**
 ```bash
 docker compose run --rm plovdiv-school-news-bot
 ```
 
-## unRAID Setup
+## Настройка за unRAID
 
-### Option 1: User Scripts Plugin
+### Вариант 1: User Scripts Plugin
 
-1. Install "User Scripts" from Community Applications
-2. Create a new script with:
+1. Инсталирайте "User Scripts" от Community Applications
+2. Създайте нов скрипт със съдържание:
 
 ```bash
 #!/bin/bash
@@ -56,11 +56,11 @@ cd /mnt/user/appdata/plovdiv-school-news-bot
 docker compose run --rm plovdiv-school-news-bot
 ```
 
-3. Set schedule to "Custom" with cron: `0 15 * * *` (15:00 daily)
+3. Задайте график "Custom" с cron: `0 15 * * *` (15:00 всеки ден)
 
-### Option 2: Cron Job
+### Вариант 2: Cron Job
 
-Add to `/boot/config/go` or use the cron manager:
+Добавете в `/boot/config/go` или използвайте cron мениджъра:
 
 ```bash
 0 15 * * * docker run --rm \
@@ -70,49 +70,49 @@ Add to `/boot/config/go` or use the cron manager:
   ghcr.io/ownzi/plovdiv-school-news-bot:latest
 ```
 
-## Configuration
+## Конфигурация
 
-| Environment Variable | Description | Default |
-|---------------------|-------------|---------|
-| `VIBER_BOT_TOKEN` | Viber Bot API token (required) | - |
-| `VIBER_CHAT_ID` | Viber chat/user ID to notify (required) | - |
-| `NEWS_URL` | URL to scrape for news | `https://dz-priem.plovdiv.bg/news` |
-| `STATE_FILE` | Path to persistence file | `/data/seen_articles.json` |
-| `DRY_RUN` | If `true`, don't send messages | `false` |
-| `TZ` | Timezone for logging | `Europe/Sofia` |
+| Променлива | Описание | По подразбиране |
+|------------|----------|-----------------|
+| `VIBER_BOT_TOKEN` | Viber Bot API токен (задължителен) | - |
+| `VIBER_CHAT_ID` | Viber чат/потребител ID за уведомления (задължителен) | - |
+| `NEWS_URL` | URL за следене на новини | `https://dz-priem.plovdiv.bg/news` |
+| `STATE_FILE` | Път до файла за състояние | `/data/seen_articles.json` |
+| `DRY_RUN` | Ако е `true`, не изпраща съобщения | `false` |
+| `TZ` | Часова зона за логовете | `Europe/Sofia` |
 
-## Data Persistence
+## Съхранение на данни
 
-The bot stores seen article IDs in `/data/seen_articles.json`. Mount this as a volume to persist across container restarts.
+Ботът съхранява ID-тата на видените статии в `/data/seen_articles.json`. Монтирайте това като volume, за да запазите данните между рестартиранията на контейнера.
 
-## Development
+## Разработка
 
 ```bash
-# Install dependencies
+# Инсталиране на зависимости
 pip install -r requirements.txt
 
-# Run locally
+# Локално стартиране
 python -m src.main
 
-# Run tests
+# Стартиране на тестове
 pytest tests/
 ```
 
-## Viber Bot API Notes
+## Бележки за Viber Bot API
 
-- Viber bots require a webhook for receiving messages, but this bot only **sends** notifications
-- For group chats, the bot must be added as a member
-- Rate limits: 20 requests/second for messages
-- Messages support text, URLs, and rich media
+- Viber ботовете изискват webhook за получаване на съобщения, но този бот само **изпраща** уведомления
+- За групови чатове ботът трябва да бъде добавен като член
+- Лимити: 20 заявки/секунда за съобщения
+- Съобщенията поддържат текст, URL-и и rich media
 
-### Getting Group Chat ID
+### Получаване на Group Chat ID
 
-1. Set up a webhook endpoint (even temporarily)
-2. Add the bot to your group
-3. Send any message in the group
-4. The webhook will receive an event with `chat_id` in the payload
+1. Настройте webhook endpoint (дори временно)
+2. Добавете бота в групата
+3. Изпратете произволно съобщение в групата
+4. Webhook-ът ще получи събитие с `chat_id` в payload-а
 
-Alternatively, use this minimal webhook to capture the ID:
+Алтернативно, използвайте този минимален webhook за улавяне на ID-то:
 
 ```python
 from flask import Flask, request
@@ -121,7 +121,7 @@ app = Flask(__name__)
 @app.route('/viber', methods=['POST'])
 def viber_webhook():
     data = request.json
-    print(f"Event: {data}")
+    print(f"Събитие: {data}")
     if 'chat' in data:
         print(f"Chat ID: {data['chat']['id']}")
     return 'ok'
@@ -130,6 +130,6 @@ if __name__ == '__main__':
     app.run(port=8080)
 ```
 
-## License
+## Лиценз
 
 MIT

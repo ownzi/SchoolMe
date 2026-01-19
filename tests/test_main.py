@@ -1,4 +1,4 @@
-"""Tests for the Plovdiv School News Bot."""
+"""Тестове за бота за новини от детски градини в Пловдив."""
 
 import json
 import tempfile
@@ -11,69 +11,69 @@ from src.main import Article, StateManager, NewsScraper
 
 
 class TestArticle:
-    """Tests for Article dataclass."""
+    """Тестове за Article dataclass."""
     
     def test_article_id_is_deterministic(self):
-        """Article ID should be deterministic based on URL."""
-        article = Article(url="https://example.com/news/1", title="Test")
+        """ID на статия трябва да е детерминистичен."""
+        article = Article(url="https://example.com/news/1", title="Тест")
         assert article.id == article.id
         
     def test_different_urls_have_different_ids(self):
-        """Different URLs should produce different IDs."""
-        a1 = Article(url="https://example.com/news/1", title="Test")
-        a2 = Article(url="https://example.com/news/2", title="Test")
+        """Различни URL-и трябва да генерират различни ID-та."""
+        a1 = Article(url="https://example.com/news/1", title="Тест")
+        a2 = Article(url="https://example.com/news/2", title="Тест")
         assert a1.id != a2.id
         
     def test_same_url_same_id(self):
-        """Same URL should produce same ID regardless of other fields."""
-        a1 = Article(url="https://example.com/news/1", title="Test 1", date="2024-01-01")
-        a2 = Article(url="https://example.com/news/1", title="Test 2", date="2024-01-02")
+        """Един и същ URL трябва да генерира едно и също ID."""
+        a1 = Article(url="https://example.com/news/1", title="Тест 1", date="2024-01-01")
+        a2 = Article(url="https://example.com/news/1", title="Тест 2", date="2024-01-02")
         assert a1.id == a2.id
 
 
 class TestStateManager:
-    """Tests for StateManager."""
+    """Тестове за StateManager."""
     
     def test_new_state_is_empty(self):
-        """New state manager should have no seen articles."""
+        """Нов state manager трябва да няма видени статии."""
         with tempfile.TemporaryDirectory() as tmpdir:
             state = StateManager(f"{tmpdir}/state.json")
             assert state.get_seen_count() == 0
     
     def test_mark_seen_persists(self):
-        """Marked articles should be persisted and recoverable."""
+        """Маркираните статии трябва да се запазват."""
         with tempfile.TemporaryDirectory() as tmpdir:
             state_file = f"{tmpdir}/state.json"
             
-            # Mark an article as seen
+            # Маркираме статия като видяна
             state1 = StateManager(state_file)
-            article = Article(url="https://example.com/1", title="Test")
+            article = Article(url="https://example.com/1", title="Тест")
             state1.mark_seen(article)
             
-            # Create new instance and verify persistence
+            # Създаваме нова инстанция и проверяваме
             state2 = StateManager(state_file)
             assert state2.is_seen(article)
             assert state2.get_seen_count() == 1
     
     def test_is_seen_returns_false_for_new(self):
-        """is_seen should return False for new articles."""
+        """is_seen трябва да връща False за нови статии."""
         with tempfile.TemporaryDirectory() as tmpdir:
             state = StateManager(f"{tmpdir}/state.json")
-            article = Article(url="https://example.com/new", title="New")
+            article = Article(url="https://example.com/new", title="Нова")
             assert not state.is_seen(article)
     
     def test_handles_corrupted_state_file(self):
-        """Should handle corrupted state files gracefully."""
+        """Трябва да обработва повредени файлове със състояние."""
         with tempfile.TemporaryDirectory() as tmpdir:
             state_file = Path(tmpdir) / "state.json"
-            state_file.write_text("not valid json {{{")
+            state_file.write_text("невалиден json {{{")
             
             state = StateManager(str(state_file))
             assert state.get_seen_count() == 0
 
 
 class TestNewsScraper:
-    """Tests for NewsScraper."""
+    """Тестове за NewsScraper."""
     
     SAMPLE_HTML = """
     <!DOCTYPE html>
@@ -94,7 +94,7 @@ class TestNewsScraper:
     """
     
     def test_parse_articles_from_html(self):
-        """Should parse articles from HTML."""
+        """Трябва да парсва статии от HTML."""
         scraper = NewsScraper("https://example.com/news")
         articles = scraper._parse_articles(self.SAMPLE_HTML)
         
@@ -102,9 +102,9 @@ class TestNewsScraper:
         assert any("прием" in a.title.lower() or "съобщение" in a.title.lower() for a in articles)
     
     def test_normalizes_relative_urls(self):
-        """Should normalize relative URLs to absolute."""
+        """Трябва да нормализира относителни URL-и към абсолютни."""
         scraper = NewsScraper("https://example.com/news")
-        html = '<html><body><a href="/article/1">Test Article Title Here</a></body></html>'
+        html = '<html><body><a href="/article/1">Тестова статия заглавие тук</a></body></html>'
         articles = scraper._parse_articles(html)
         
         if articles:
@@ -112,8 +112,8 @@ class TestNewsScraper:
     
     @patch('requests.Session.get')
     def test_fetch_handles_network_error(self, mock_get):
-        """Should handle network errors gracefully."""
-        mock_get.side_effect = Exception("Network error")
+        """Трябва да обработва мрежови грешки."""
+        mock_get.side_effect = Exception("Мрежова грешка")
         
         scraper = NewsScraper("https://example.com/news")
         articles = scraper.fetch_articles()
@@ -121,30 +121,30 @@ class TestNewsScraper:
         assert articles == []
     
     def test_filters_navigation_links(self):
-        """Should filter out navigation and social links."""
+        """Трябва да филтрира навигационни и социални линкове."""
         html = """
         <html><body>
-            <a href="/news/real-article">Real News Article Here</a>
-            <a href="https://facebook.com/share">Share</a>
-            <a href="mailto:test@test.com">Contact</a>
-            <a href="#">Top</a>
+            <a href="/news/real-article">Истинска новинарска статия тук</a>
+            <a href="https://facebook.com/share">Сподели</a>
+            <a href="mailto:test@test.com">Контакт</a>
+            <a href="#">Нагоре</a>
         </body></html>
         """
         
         scraper = NewsScraper("https://example.com")
         articles = scraper._parse_articles(html)
         
-        # Should only have the real article
+        # Трябва да има само истинската статия
         urls = [a.url for a in articles]
         assert not any("facebook" in u for u in urls)
         assert not any("mailto" in u for u in urls)
 
 
 class TestIntegration:
-    """Integration tests."""
+    """Интеграционни тестове."""
     
     def test_full_flow_dry_run(self):
-        """Test the full flow in dry run mode."""
+        """Тест на пълния процес в тестов режим."""
         with tempfile.TemporaryDirectory() as tmpdir:
             import os
             os.environ['STATE_FILE'] = f"{tmpdir}/state.json"
@@ -152,5 +152,5 @@ class TestIntegration:
             os.environ['VIBER_BOT_TOKEN'] = ''
             os.environ['VIBER_CHAT_ID'] = ''
             
-            # The main function should complete without error in dry run
-            # (Can't actually test network calls here without mocking)
+            # Главната функция трябва да завърши без грешка в тестов режим
+            # (Не можем да тестваме мрежови заявки без mocking)
