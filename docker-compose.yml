@@ -1,0 +1,20 @@
+services:
+  plovdiv-school-news-bot:
+    build: .
+    image: ghcr.io/ownzi/plovdiv-school-news-bot:latest
+    container_name: plovdiv-school-news-bot
+    restart: "no"  # Managed by cron/scheduler, not always-on
+    environment:
+      - VIBER_BOT_TOKEN=${VIBER_BOT_TOKEN}
+      - VIBER_CHAT_ID=${VIBER_CHAT_ID}
+      - NEWS_URL=${NEWS_URL:-https://dz-priem.plovdiv.bg/news}
+      - DRY_RUN=${DRY_RUN:-false}
+      - TZ=Europe/Sofia
+    volumes:
+      - ./data:/data
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
